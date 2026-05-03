@@ -1,83 +1,52 @@
-# PetFilth
+# PetFilth 
 
-> **Tagline:** Let your pet get some ass
->
-> **Hook:** Sick of your pet sniffing ass at the mall? PetFilth — even your pet gets some ass too.
+> *"Let your pet get some"*
 
-A Tinder-style pet-to-pet dating webapp. Swipe to match, swipe to pass.
+A Tinder-style dating app for pets. Swipe right to like, swipe left to pass. Match with other pets and let the magic happen.
 
-## Live
+## Features
 
-Served at the apex of a custom domain via GitHub Pages (see `CNAME`).
+- **Swipe Interface**: Touch-friendly card swiping with gesture support
+- **Match Animation**: Celebratory match modal with floating hearts
+- **Pet Profiles**: Name, age, breed, bio, and personality traits
+- **Responsive Design**: Works on mobile and desktop
 
-## Layout
+## Tech Stack
 
-```
-index.html   ← the entire app, single-file, zero build step
-CNAME        ← GitHub Pages custom-domain pointer
-README.md
-LICENSE
-```
+- **Vite** + **React** + **TypeScript**
+- Pure CSS animations (no animation libraries)
+- Touch and mouse gesture handling
 
-## Stack
-
-- Vanilla HTML/CSS/JS, no framework, no build.
-- Google Fonts (Bricolage Grotesque + Inter) loaded via CDN.
-- Pet photos via Unsplash CDN URLs (replace with real uploads when you have them).
-- Touch + mouse drag, like/pass/super-sniff/rewind/boost actions, match modal,
-  in-memory stats. Mobile-first responsive layout.
-
-## Local preview
+## Development
 
 ```bash
-python3 -m http.server 8000
-# then open http://localhost:8000
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-## Deploy via GitHub Pages (apex domain)
+## Deployment
 
-### 1. Repo settings
+This app is configured for deployment to `staging.maximisedai.com/petfilth/`.
 
-GitHub repo → **Settings → Pages**
+The Vite config sets `base: '/petfilth/'` to support subpath hosting.
 
-- **Source:** Deploy from a branch → `main` → `/ (root)` → Save
-- **Custom domain:** enter the apex domain → Save
-- Tick **Enforce HTTPS** once the cert provisions (5–30 min after DNS resolves)
+### Build & Deploy
 
-### 2. DNS at the registrar (apex `@` host)
-
-Four A records pointing at GitHub Pages' apex IPs:
-
-```
-@  A  185.199.108.153
-@  A  185.199.109.153
-@  A  185.199.110.153
-@  A  185.199.111.153
+```bash
+npm run build
+# Deploy contents of dist/ to staging.maximisedai.com/petfilth/
 ```
 
-Optional (recommended) IPv6:
+### Quick Preview
 
-```
-@  AAAA  2606:50c0:8000::153
-@  AAAA  2606:50c0:8001::153
-@  AAAA  2606:50c0:8002::153
-@  AAAA  2606:50c0:8003::153
-```
-
-**Do not** put a `CNAME` *DNS record* at `@` — RFC forbids it (conflicts with SOA/NS).
-The `CNAME` *file* in this repo is a different thing entirely: it's a GitHub Pages
-convention telling Pages which custom domain to bind.
-
-### 3. (Optional) Add `www` subdomain
-
-If you also want `www.<domain>` to redirect to apex:
-
-```
-www  CNAME  captjreacher.github.io.
-```
-
-GitHub Pages will auto-redirect `www.<domain>` → `<domain>` once both are configured.
+Open `preview.html` directly in a browser for a standalone demo (no build required).
 
 ## License
 
-MIT.
+MIT
