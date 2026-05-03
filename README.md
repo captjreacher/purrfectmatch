@@ -8,18 +8,16 @@ A Tinder-style pet-to-pet dating webapp. Swipe to match, swipe to pass.
 
 ## Live
 
-Intended deployment: <https://staging.maximisedai.com/petfilth>
+Served at the apex of a custom domain via GitHub Pages (see `CNAME`).
 
 ## Layout
 
 ```
-petfilth/
-  index.html     ← the entire app, single-file, zero build step
+index.html   ← the entire app, single-file, zero build step
+CNAME        ← GitHub Pages custom-domain pointer
+README.md
+LICENSE
 ```
-
-The `petfilth/` directory + `index.html` pattern is intentional — it serves cleanly
-at `<host>/petfilth` from any webserver (Apache, Nginx, WordPress, GH Pages,
-Vercel, Netlify) without rewrite rules or special config.
 
 ## Stack
 
@@ -32,23 +30,53 @@ Vercel, Netlify) without rewrite rules or special config.
 ## Local preview
 
 ```bash
-# From the repo root, any static server works:
 python3 -m http.server 8000
-# then open http://localhost:8000/petfilth/
+# then open http://localhost:8000
 ```
 
-## Deploy
+## Deploy via GitHub Pages (apex domain)
 
-- **GitHub Pages** → enable Pages on `main` / root → serves at
-  `https://captjreacher.github.io/petfilth/petfilth/`. (To serve at
-  `/petfilth/` instead of `/petfilth/petfilth/`, move `petfilth/index.html`
-  to root — or just live with the nested URL while the source layout
-  stays portable.)
-- **staging.maximisedai.com/petfilth** → copy the `petfilth/` directory
-  into the staging site's web root. The directory + `index.html` will
-  serve at `<host>/petfilth` natively on any of the major webservers,
-  including under WordPress (since the literal directory + file path
-  bypasses WP's `index.php` routing).
+### 1. Repo settings
+
+GitHub repo → **Settings → Pages**
+
+- **Source:** Deploy from a branch → `main` → `/ (root)` → Save
+- **Custom domain:** enter the apex domain → Save
+- Tick **Enforce HTTPS** once the cert provisions (5–30 min after DNS resolves)
+
+### 2. DNS at the registrar (apex `@` host)
+
+Four A records pointing at GitHub Pages' apex IPs:
+
+```
+@  A  185.199.108.153
+@  A  185.199.109.153
+@  A  185.199.110.153
+@  A  185.199.111.153
+```
+
+Optional (recommended) IPv6:
+
+```
+@  AAAA  2606:50c0:8000::153
+@  AAAA  2606:50c0:8001::153
+@  AAAA  2606:50c0:8002::153
+@  AAAA  2606:50c0:8003::153
+```
+
+**Do not** put a `CNAME` *DNS record* at `@` — RFC forbids it (conflicts with SOA/NS).
+The `CNAME` *file* in this repo is a different thing entirely: it's a GitHub Pages
+convention telling Pages which custom domain to bind.
+
+### 3. (Optional) Add `www` subdomain
+
+If you also want `www.<domain>` to redirect to apex:
+
+```
+www  CNAME  captjreacher.github.io.
+```
+
+GitHub Pages will auto-redirect `www.<domain>` → `<domain>` once both are configured.
 
 ## License
 
