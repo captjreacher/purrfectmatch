@@ -1,22 +1,25 @@
-# Dependencies
+# dependencies
 node_modules/
 
-# Build output
+# builds
 dist/
+build/
+.next/
+out/
 
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Env files
+# env / secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
-# Logs
+# logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
