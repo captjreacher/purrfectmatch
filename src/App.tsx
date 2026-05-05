@@ -2,14 +2,17 @@ import { useState, useCallback, useEffect } from 'react'
 import SwipeCard from './components/SwipeCard'
 import MatchModal from './components/MatchModal'
 import LandingPage from './components/LandingPage'
+import MessagePanel from './components/MessagePanel'
 import { pets, Pet } from './data/pets'
 import {
   defaultProfile,
   demoProfile,
   defaultVoiceForSpecies,
+  getCompatibilityLabel,
   getMatchScore,
   isDeterministicMatch,
   mergeProfile,
+  PetMessage,
   PetProfile,
   SpeciesVoice,
   SwipeRecord,
@@ -25,6 +28,7 @@ type SavedSession = {
   history: SwipeRecord[]
   onboarded: boolean
   hasSeenLanding: boolean
+  messages: PetMessage[]
 }
 
 function createInitialSession(): SavedSession {
@@ -35,6 +39,7 @@ function createInitialSession(): SavedSession {
     history: [],
     onboarded: false,
     hasSeenLanding: false,
+    messages: [],
   }
 }
 
@@ -51,10 +56,24 @@ function loadSession(): SavedSession {
       history: Array.isArray(parsed.history) ? parsed.history : [],
       onboarded: Boolean(parsed.onboarded),
       hasSeenLanding: Boolean(parsed.hasSeenLanding),
+      messages: Array.isArray(parsed.messages) ? parsed.messages.filter(isPetMessageLike) : [],
     }
   } catch {
     return createInitialSession()
   }
+}
+
+function isPetMessageLike(m: unknown): m is PetMessage {
+  if (!m || typeof m !== 'object') return false
+  const o = m as Record<string, unknown>
+  return typeof o.id === 'string'
+    && typeof o.petId === 'number'
+    && (o.from === 'you' || o.from === 'them')
+    && typeof o.text === 'string'
+}
+
+function makeMessageId(): string {
+  return `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function App() {
@@ -62,6 +81,7 @@ function App() {
   const [showMatch, setShowMatch] = useState<Pet | null>(null)
   const [direction, setDirection] = useState<'left' | 'right' | null>(null)
   const [activeView, setActiveView] = useState<'swipe' | 'matches'>('swipe')
+  const [messagingPet, setMessagingPet] = useState<Pet | null>(null)
 
   const currentPet = pets[session.currentIndex]
   const isFinished = session.currentIndex >= pets.length
@@ -86,7 +106,6 @@ function App() {
   }
 
   const handleDemoPet = () => {
-    // Pre-fill the wizard with demoProfile so the user can see and edit before swiping
     setSession(prev => ({
       ...prev,
       hasSeenLanding: true,
@@ -126,7 +145,32 @@ function App() {
     localStorage.removeItem(STORAGE_KEY)
     setSession(createInitialSession())
     setActiveView('swipe')
+    setMessagingPet(null)
   }
+
+  const handleSendMessage = (text: string) => {
+    if (!messagingPet) return
+    const newMessage: PetMessage = {
+      id: makeMessageId(),
+      petId: messagingPet.id,
+      from: 'you',
+      text,
+    }
+    // Auto-reply: pet echoes its native voice with light variation
+    const replyVoice: SpeciesVoice = bubbleVoiceForPet(messagingPet)
+    const replyText = pickAutoReply(replyVoice)
+    const reply: PetMessage = {
+      id: makeMessageId(),
+      petId: messagingPet.id,
+      from: 'them',
+      text: replyText,
+    }
+    setSession(prev => ({ ...prev, messages: [...prev.messages, newMessage, reply] }))
+  }
+
+  const messagesForCurrentPet = messagingPet
+    ? session.messages.filter(m => m.petId === messagingPet.id)
+    : []
 
   // 1) Landing
   if (!session.hasSeenLanding) {
@@ -307,12 +351,29 @@ function App() {
         {activeView === 'matches' ? (
           <section className="matches-panel">
             <h2>Your matches</h2>
-            {session.matches.length === 0 ? <p>No matches yet. Like pets with a strong compatibility score.</p> : session.matches.map(pet => (
-              <article key={pet.id} className="match-row">
-                <img src={pet.image} alt={pet.name} />
-                <div><strong>{pet.name}</strong><span>{pet.breed} · {getMatchScore(pet, session.profile)}% fit</span></div>
-              </article>
-            ))}
+            {session.matches.length === 0 ? (
+              <p>No matches yet. Like pets with a strong compatibility score.</p>
+            ) : (
+              session.matches.map(pet => {
+                const score = getMatchScore(pet, session.profile)
+                return (
+                  <article key={pet.id} className="match-row">
+                    <img src={pet.image} alt={pet.name} />
+                    <div className="match-row-meta">
+                      <strong>{pet.name}</strong>
+                      <span>{pet.breed} · {score}% · {getCompatibilityLabel(score)}</span>
+                    </div>
+                    <button
+                      className="message-btn"
+                      onClick={() => setMessagingPet(pet)}
+                      aria-label={`Message ${pet.name}`}
+                    >
+                      Message
+                    </button>
+                  </article>
+                )
+              })
+            )}
           </section>
         ) : isFinished ? (
           <div className="finished-card">
@@ -338,8 +399,35 @@ function App() {
         )}
       </footer>
       {showMatch && <MatchModal pet={showMatch} onClose={() => setShowMatch(null)} />}
+      {messagingPet && (
+        <MessagePanel
+          pet={messagingPet}
+          voice={session.profile.speciesVoice}
+          messages={messagesForCurrentPet}
+          onSend={handleSendMessage}
+          onClose={() => setMessagingPet(null)}
+        />
+      )}
     </div>
   )
+}
+
+// Helpers (top-level for hoisting)
+function bubbleVoiceForPet(pet: Pet): SpeciesVoice {
+  const t = `${pet.breed} ${pet.bio}`.toLowerCase()
+  if (t.includes('cat') || t.includes('persian') || t.includes('siamese') || t.includes('tabby')) return 'meow'
+  if (t.includes('retriever') || t.includes('labrador') || t.includes('collie') || t.includes('bulldog') || t.includes('shiba') || t.includes('corgi')) return 'woof'
+  return 'sniff'
+}
+
+function pickAutoReply(voice: SpeciesVoice): string {
+  const variants: Record<SpeciesVoice, string[]> = {
+    woof: ['woof woof!', 'woof.', 'woof woof woof', 'woof?'],
+    meow: ['meow', 'meow meow', 'meow.', 'mrrrow'],
+    sniff: ['sniff sniff', 'sniff?', 'sniff.', 'sniff sniff sniff'],
+  }
+  const list = variants[voice]
+  return list[Math.floor(Math.random() * list.length)]
 }
 
 export default App
