@@ -2,9 +2,15 @@ import { useRef, useState, useEffect } from 'react'
 import { Pet } from '../data/pets'
 import './SwipeCard.css'
 
-interface SwipeCardProps { pet: Pet; onSwipe?: (direction: 'left' | 'right') => void; swipeDirection?: 'left' | 'right' | null; isBackground?: boolean }
+interface SwipeCardProps {
+  pet: Pet
+  onSwipe?: (direction: 'left' | 'right') => void
+  swipeDirection?: 'left' | 'right' | null
+  isBackground?: boolean
+  matchScore?: number
+}
 
-export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground }: SwipeCardProps) {
+export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground, matchScore }: SwipeCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [dragState, setDragState] = useState({ x: 0, y: 0, isDragging: false })
   const startPos = useRef({ x: 0, y: 0 })
@@ -36,12 +42,16 @@ export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground }
       onMouseMove={e => handleMove(e.clientX, e.clientY)}
       onMouseUp={handleEnd} onMouseLeave={handleEnd}>
       <div className="card-image" style={{ backgroundImage: `url(${pet.image})` }}>
+        {typeof matchScore === 'number' && !isBackground && (
+          <div className="score-badge"><strong>{matchScore}%</strong><span>fit</span></div>
+        )}
         <div className="stamp like" style={{ opacity: likeOpacity }}>LIKE</div>
         <div className="stamp nope" style={{ opacity: nopeOpacity }}>NOPE</div>
       </div>
       <div className="card-content">
         <div className="card-header"><h2>{pet.name}</h2><span className="age">{pet.age}</span></div>
         <p className="breed">{pet.breed}</p>
+        {typeof matchScore === 'number' && !isBackground && <p className="score-copy">Compatibility score based on profile vibe and traits.</p>}
         <p className="bio">{pet.bio}</p>
         <div className="traits">{pet.traits.map((trait, i) => <span key={i} className="trait">{trait}</span>)}</div>
       </div>
