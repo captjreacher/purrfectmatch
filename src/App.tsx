@@ -11,6 +11,7 @@ import {
   isDeterministicMatch,
   mergeProfile,
   PetProfile,
+  SpeciesVoice,
   SwipeRecord,
 } from './appState'
 import './App.css'
@@ -74,6 +75,10 @@ function App() {
     setSession(prev => ({ ...prev, profile }))
   }
 
+  const updateProfileField = <K extends keyof PetProfile>(key: K, value: PetProfile[K]) => {
+    setSession(prev => ({ ...prev, profile: { ...prev.profile, [key]: value } }))
+  }
+
   const startApp = () => setSession(prev => ({ ...prev, onboarded: true }))
 
   const handleCreateProfile = () => {
@@ -128,37 +133,156 @@ function App() {
     return <LandingPage onCreateProfile={handleCreateProfile} onDemoPet={handleDemoPet} />
   }
 
-  // 2) Onboarding (still the basic 3-field form for now; expanded in next commit)
+  // 2) Onboarding — single screen, expanded with pet-specific quirks
   if (!session.onboarded) {
+    const profile = session.profile
     return (
       <div className="app onboarding-app">
         <section className="onboarding-card">
           <div className="eyebrow">PetFilth · Profile</div>
           <h1>Set up your pet.</h1>
-          <p className="intro">A tiny swipe app with personality-led matching. No account, no backend, just a lightweight staged prototype.</p>
-          <label>
-            Pet name
-            <input value={session.profile.petName} onChange={e => setProfile({ ...session.profile, petName: e.target.value })} placeholder="Milo" />
-          </label>
-          <label>
-            Looking for
-            <select
-              value={session.profile.species}
-              onChange={e => {
-                const species = e.target.value as PetProfile['species']
-                setProfile({ ...session.profile, species, speciesVoice: defaultVoiceForSpecies(species) })
-              }}
-            >
-              <option value="Any">Any</option>
-              <option value="Dog">Dog</option>
-              <option value="Cat">Cat</option>
-            </select>
-          </label>
-          <label>
-            Your pet's vibe
-            <textarea value={session.profile.vibe} onChange={e => setProfile({ ...session.profile, vibe: e.target.value })} rows={3} />
-          </label>
+          <p className="intro">
+            We ask the questions humans would never think to ask. Stays in your browser. No account required.
+          </p>
+
+          <div className="form-section">
+            <div className="form-section-title">The basics</div>
+
+            <label>
+              Pet name
+              <input
+                value={profile.petName}
+                onChange={e => updateProfileField('petName', e.target.value)}
+                placeholder="Milo, Biscuit, Lord Whiskerton III"
+              />
+            </label>
+
+            <label>
+              Looking for
+              <select
+                value={profile.species}
+                onChange={e => {
+                  const species = e.target.value as PetProfile['species']
+                  setProfile({ ...profile, species, speciesVoice: defaultVoiceForSpecies(species) })
+                }}
+              >
+                <option value="Any">Any</option>
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+              </select>
+            </label>
+
+            <label>
+              Your pet's vibe
+              <textarea
+                value={profile.vibe}
+                onChange={e => updateProfileField('vibe', e.target.value)}
+                rows={2}
+                placeholder="Chaotic good. Snack-led. Emotionally available between naps."
+              />
+            </label>
+
+            <label>
+              What they're looking for
+              <textarea
+                value={profile.lookingFor}
+                onChange={e => updateProfileField('lookingFor', e.target.value)}
+                rows={2}
+                placeholder="Walks, couch time, play dates and questionable decisions."
+              />
+            </label>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-title">Pet-only questions</div>
+
+            <label>
+              Favourite food once it stops running
+              <input
+                value={profile.foodWhenDead}
+                onChange={e => updateProfileField('foodWhenDead', e.target.value)}
+                placeholder="Chicken, steak, anything dropped near the BBQ"
+              />
+            </label>
+
+            <label>
+              Favourite food while it is still making poor life choices
+              <input
+                value={profile.foodToChase}
+                onChange={e => updateProfileField('foodToChase', e.target.value)}
+                placeholder="Birds, flies, suspicious shadows, the postie"
+              />
+            </label>
+
+            <label>
+              Fashion tolerance
+              <input
+                list="fashion-styles"
+                value={profile.fashionStyle}
+                onChange={e => updateProfileField('fashionStyle', e.target.value)}
+                placeholder="Naked and proud, Bandana acceptable, Designer chaos…"
+              />
+              <datalist id="fashion-styles">
+                <option value="Naked and proud" />
+                <option value="Bandana acceptable" />
+                <option value="Designer chaos" />
+                <option value="Will remove jumper immediately" />
+                <option value="Seasonal humiliation only" />
+              </datalist>
+            </label>
+
+            <label>
+              Preferred sleeping arrangement
+              <input
+                list="sleeping-spots"
+                value={profile.sleepingSpot}
+                onChange={e => updateProfileField('sleepingSpot', e.target.value)}
+                placeholder="Human bed centre position, sunny patch, laundry basket…"
+              />
+              <datalist id="sleeping-spots">
+                <option value="Luxury bed ignored" />
+                <option value="Human bed, centre position" />
+                <option value="Laundry basket" />
+                <option value="Sunny patch" />
+                <option value="Anywhere inconvenient" />
+              </datalist>
+            </label>
+
+            <label>
+              Human staff notes
+              <textarea
+                value={profile.ownerNotes}
+                onChange={e => updateProfileField('ownerNotes', e.target.value)}
+                rows={2}
+                placeholder="Owner has thumbs, transport, treats, and unresolved attachment issues."
+              />
+            </label>
+
+            <label>
+              Immediate red flags
+              <textarea
+                value={profile.datingRedFlags}
+                onChange={e => updateProfileField('datingRedFlags', e.target.value)}
+                rows={2}
+                placeholder="Vacuum enthusiasm, bath positivity, sharing toys too easily."
+              />
+            </label>
+
+            <label>
+              Default message language
+              <select
+                value={profile.speciesVoice}
+                onChange={e => updateProfileField('speciesVoice', e.target.value as SpeciesVoice)}
+              >
+                <option value="woof">woof</option>
+                <option value="meow">meow</option>
+                <option value="sniff">sniff</option>
+              </select>
+            </label>
+          </div>
+
           <button className="primary-btn" onClick={startApp}>Start swiping</button>
+          <button className="ghost-cta onboarding-ghost" onClick={hardReset}>Back to landing</button>
         </section>
       </div>
     )
