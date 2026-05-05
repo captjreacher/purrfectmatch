@@ -1,68 +1,157 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import SwipeCard from './components/SwipeCard'
 import MatchModal from './components/MatchModal'
 import { pets, Pet } from './data/pets'
+import { defaultProfile, getMatchScore, isDeterministicMatch, PetProfile, SwipeRecord } from './appState'
 import './App.css'
 
+const STORAGE_KEY = 'petfilth-lite-session'
+
+type SavedSession = {
+  profile: PetProfile
+  currentIndex: number
+  matches: Pet[]
+  history: SwipeRecord[]
+  onboarded: boolean
+}
+
+function loadSession(): SavedSession {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) throw new Error('No session')
+    return { ...JSON.parse(raw), profile: { ...defaultProfile, ...JSON.parse(raw).profile } }
+  } catch {
+    return { profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false }
+  }
+}
+
 function App() {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [matches, setMatches] = useState<Pet[]>([])
+  const [session, setSession] = useState<SavedSession>(() => loadSession())
   const [showMatch, setShowMatch] = useState<Pet | null>(null)
   const [direction, setDirection] = useState<'left' | 'right' | null>(null)
+  const [activeView, setActiveView] = useState<'swipe' | 'matches'>('swipe')
 
-  const currentPet = pets[currentIndex]
-  const isFinished = currentIndex >= pets.length
+  const currentPet = pets[session.currentIndex]
+  const isFinished = session.currentIndex >= pets.length
+  const progress = Math.min(session.currentIndex + 1, pets.length)
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+  }, [session])
+
+  const updateProfile = (field: keyof PetProfile, value: string) => {
+    setSession(prev => ({ ...prev, profile: { ...prev.profile, [field]: value } }))
+  }
+
+  const startApp = () => setSession(prev => ({ ...prev, onboarded: true }))
 
   const handleSwipe = useCallback((dir: 'left' | 'right') => {
+    if (!currentPet) return
+
+    const matched = dir === 'right' && isDeterministicMatch(currentPet, session.profile)
     setDirection(dir)
-    if (dir === 'right' && Math.random() < 0.4) {
-      setMatches(prev => [...prev, currentPet])
+
+    if (matched) {
       setTimeout(() => setShowMatch(currentPet), 300)
     }
+
     setTimeout(() => {
-      setCurrentIndex(prev => prev + 1)
+      setSession(prev => ({
+        ...prev,
+        currentIndex: prev.currentIndex + 1,
+        matches: matched && !prev.matches.some(pet => pet.id === currentPet.id)
+          ? [...prev.matches, currentPet]
+          : prev.matches,
+        history: [...prev.history, { petId: currentPet.id, decision: dir === 'right' ? 'like' : 'pass', matched }],
+      }))
       setDirection(null)
     }, 300)
-  }, [currentPet])
+  }, [currentPet, session.profile])
 
   const handleReset = () => {
-    setCurrentIndex(0)
-    setMatches([])
+    setSession(prev => ({ ...prev, currentIndex: 0, matches: [], history: [], onboarded: true }))
+    setActiveView('swipe')
+  }
+
+  const hardReset = () => {
+    localStorage.removeItem(STORAGE_KEY)
+    setSession({ profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false })
+    setActiveView('swipe')
+  }
+
+  if (!session.onboarded) {
+    return (
+      <div className="app onboarding-app">
+        <section className="onboarding-card">
+          <div className="eyebrow">PetFilth Lite</div>
+          <h1>Find a compatible playmate for your pet.</h1>
+          <p className="intro">A tiny swipe app with personality-led matching. No account, no backend, just a lightweight staged prototype.</p>
+          <label>
+            Pet name
+            <input value={session.profile.petName} onChange={e => updateProfile('petName', e.target.value)} placeholder="Milo" />
+          </label>
+          <label>
+            Looking for
+            <select value={session.profile.species} onChange={e => updateProfile('species', e.target.value)}>
+              <option>Any</option>
+              <option>Dog</option>
+              <option>Cat</option>
+            </select>
+          </label>
+          <label>
+            Your pet's vibe
+            <textarea value={session.profile.vibe} onChange={e => updateProfile('vibe', e.target.value)} rows={3} />
+          </label>
+          <button className="primary-btn" onClick={startApp}>Start swiping</button>
+        </section>
+      </div>
+    )
   }
 
   return (
     <div className="app">
       <header className="app-header">
-        <div className="logo">
-          <span className="logo-icon">🐾</span>
-          <h1>PetFilth</h1>
+        <div className="topbar">
+          <div className="logo"><span className="logo-icon">🐾</span><h1>PetFilth</h1></div>
+          <button className="ghost-btn" onClick={hardReset}>Reset</button>
         </div>
-        <p className="tagline">Let your pet get some</p>
-        {matches.length > 0 && (
-          <div className="match-count">
-            <span className="heart">❤️</span> {matches.length} match{matches.length !== 1 ? 'es' : ''}
-          </div>
-        )}
+        <p className="tagline">Personality-led pet matching for {session.profile.petName || 'your pet'}.</p>
+        <div className="stats-row">
+          <button className={activeView === 'swipe' ? 'pill active' : 'pill'} onClick={() => setActiveView('swipe')}>{progress}/{pets.length} viewed</button>
+          <button className={activeView === 'matches' ? 'pill active' : 'pill'} onClick={() => setActiveView('matches')}>❤️ {session.matches.length} match{session.matches.length !== 1 ? 'es' : ''}</button>
+        </div>
       </header>
+
       <main className="swipe-container">
-        {isFinished ? (
+        {activeView === 'matches' ? (
+          <section className="matches-panel">
+            <h2>Your matches</h2>
+            {session.matches.length === 0 ? <p>No matches yet. Like pets with a strong compatibility score.</p> : session.matches.map(pet => (
+              <article key={pet.id} className="match-row">
+                <img src={pet.image} alt={pet.name} />
+                <div><strong>{pet.name}</strong><span>{pet.breed} · {getMatchScore(pet, session.profile)}% fit</span></div>
+              </article>
+            ))}
+          </section>
+        ) : isFinished ? (
           <div className="finished-card">
             <div className="finished-icon">🎉</div>
-            <h2>You've seen all the pets!</h2>
-            <p>You matched with {matches.length} furry friend{matches.length !== 1 ? 's' : ''}.</p>
-            <button className="reset-btn" onClick={handleReset}>Start Over</button>
+            <h2>Queue complete</h2>
+            <p>{session.profile.petName} matched with {session.matches.length} pet{session.matches.length !== 1 ? 's' : ''}.</p>
+            <button className="reset-btn" onClick={handleReset}>Run again</button>
           </div>
         ) : (
           <>
-            {pets[currentIndex + 1] && <SwipeCard pet={pets[currentIndex + 1]} isBackground />}
-            <SwipeCard pet={currentPet} onSwipe={handleSwipe} swipeDirection={direction} />
+            {pets[session.currentIndex + 1] && <SwipeCard pet={pets[session.currentIndex + 1]} isBackground />}
+            <SwipeCard pet={currentPet} onSwipe={handleSwipe} swipeDirection={direction} matchScore={getMatchScore(currentPet, session.profile)} />
           </>
         )}
       </main>
+
       <footer className="action-buttons">
-        {!isFinished && (
+        {!isFinished && activeView === 'swipe' && (
           <>
-            <button className="action-btn nope" onClick={() => handleSwipe('left')} aria-label="Pass"><span>👎</span></button>
+            <button className="action-btn nope" onClick={() => handleSwipe('left')} aria-label="Pass"><span>✕</span></button>
             <button className="action-btn like" onClick={() => handleSwipe('right')} aria-label="Like"><span>❤️</span></button>
           </>
         )}
