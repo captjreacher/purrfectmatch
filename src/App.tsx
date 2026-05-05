@@ -15,13 +15,25 @@ type SavedSession = {
   onboarded: boolean
 }
 
+function createInitialSession(): SavedSession {
+  return { profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false }
+}
+
 function loadSession(): SavedSession {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) throw new Error('No session')
-    return { ...JSON.parse(raw), profile: { ...defaultProfile, ...JSON.parse(raw).profile } }
+    if (!raw) return createInitialSession()
+
+    const parsed = JSON.parse(raw) as Partial<SavedSession>
+    return {
+      profile: { ...defaultProfile, ...parsed.profile },
+      currentIndex: Number.isFinite(parsed.currentIndex) ? Number(parsed.currentIndex) : 0,
+      matches: Array.isArray(parsed.matches) ? parsed.matches : [],
+      history: Array.isArray(parsed.history) ? parsed.history : [],
+      onboarded: Boolean(parsed.onboarded),
+    }
   } catch {
-    return { profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false }
+    return createInitialSession()
   }
 }
 
@@ -39,8 +51,8 @@ function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
   }, [session])
 
-  const updateProfile = (field: keyof PetProfile, value: string) => {
-    setSession(prev => ({ ...prev, profile: { ...prev.profile, [field]: value } }))
+  const setProfile = (profile: PetProfile) => {
+    setSession(prev => ({ ...prev, profile }))
   }
 
   const startApp = () => setSession(prev => ({ ...prev, onboarded: true }))
@@ -75,7 +87,7 @@ function App() {
 
   const hardReset = () => {
     localStorage.removeItem(STORAGE_KEY)
-    setSession({ profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false })
+    setSession(createInitialSession())
     setActiveView('swipe')
   }
 
@@ -88,19 +100,19 @@ function App() {
           <p className="intro">A tiny swipe app with personality-led matching. No account, no backend, just a lightweight staged prototype.</p>
           <label>
             Pet name
-            <input value={session.profile.petName} onChange={e => updateProfile('petName', e.target.value)} placeholder="Milo" />
+            <input value={session.profile.petName} onChange={e => setProfile({ ...session.profile, petName: e.target.value })} placeholder="Milo" />
           </label>
           <label>
             Looking for
-            <select value={session.profile.species} onChange={e => updateProfile('species', e.target.value)}>
-              <option>Any</option>
-              <option>Dog</option>
-              <option>Cat</option>
+            <select value={session.profile.species} onChange={e => setProfile({ ...session.profile, species: e.target.value as PetProfile['species'] })}>
+              <option value="Any">Any</option>
+              <option value="Dog">Dog</option>
+              <option value="Cat">Cat</option>
             </select>
           </label>
           <label>
             Your pet's vibe
-            <textarea value={session.profile.vibe} onChange={e => updateProfile('vibe', e.target.value)} rows={3} />
+            <textarea value={session.profile.vibe} onChange={e => setProfile({ ...session.profile, vibe: e.target.value })} rows={3} />
           </label>
           <button className="primary-btn" onClick={startApp}>Start swiping</button>
         </section>
