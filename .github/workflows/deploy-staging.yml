@@ -3,11 +3,12 @@ name: Deploy to Staging
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: # Allow manual trigger
 
 env:
   APP_SLUG: petfilth
-  SERVER_DIR: ./staging.maximisedai.com/petfilth/
+  SERVER_DIR: /staging.maximisedai.com/petfilth/
+FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: True
 
 jobs:
   build-and-deploy:
@@ -20,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
@@ -35,21 +36,15 @@ jobs:
           test -f dist/index.html || (echo "❌ dist/index.html not found" && exit 1)
           echo "✅ Build validated: $(find dist -type f | wc -l) files ready"
 
-      - name: Validate FTP secrets
-        run: |
-          test -n "${{ secrets.STAGING_FTP_SERVER || secrets.FTP_SERVER }}" || (echo "❌ Missing FTP server secret. Add STAGING_FTP_SERVER or FTP_SERVER in repo Settings > Secrets and variables > Actions." && exit 1)
-          test -n "${{ secrets.STAGING_FTP_USERNAME || secrets.FTP_USERNAME }}" || (echo "❌ Missing FTP username secret. Add STAGING_FTP_USERNAME or FTP_USERNAME in repo Settings > Secrets and variables > Actions." && exit 1)
-          test -n "${{ secrets.STAGING_FTP_PASSWORD || secrets.FTP_PASSWORD }}" || (echo "❌ Missing FTP password secret. Add STAGING_FTP_PASSWORD or FTP_PASSWORD in repo Settings > Secrets and variables > Actions." && exit 1)
-
       - name: Deploy to staging via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.STAGING_FTP_SERVER || secrets.FTP_SERVER }}
-          username: ${{ secrets.STAGING_FTP_USERNAME || secrets.FTP_USERNAME }}
-          password: ${{ secrets.STAGING_FTP_PASSWORD || secrets.FTP_PASSWORD }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ${{ env.SERVER_DIR }}
-          dangerous-clean-slate: false
+          dangerous-clean-slate: false  # Don't delete files not in dist/
 
       - name: Deployment summary
         run: |
