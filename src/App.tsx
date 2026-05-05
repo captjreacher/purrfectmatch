@@ -1,8 +1,18 @@
 import { useState, useCallback, useEffect } from 'react'
 import SwipeCard from './components/SwipeCard'
 import MatchModal from './components/MatchModal'
+import LandingPage from './components/LandingPage'
 import { pets, Pet } from './data/pets'
-import { defaultProfile, getMatchScore, isDeterministicMatch, PetProfile, SwipeRecord } from './appState'
+import {
+  defaultProfile,
+  demoProfile,
+  defaultVoiceForSpecies,
+  getMatchScore,
+  isDeterministicMatch,
+  mergeProfile,
+  PetProfile,
+  SwipeRecord,
+} from './appState'
 import './App.css'
 
 const STORAGE_KEY = 'petfilth-lite-session'
@@ -13,10 +23,18 @@ type SavedSession = {
   matches: Pet[]
   history: SwipeRecord[]
   onboarded: boolean
+  hasSeenLanding: boolean
 }
 
 function createInitialSession(): SavedSession {
-  return { profile: defaultProfile, currentIndex: 0, matches: [], history: [], onboarded: false }
+  return {
+    profile: defaultProfile,
+    currentIndex: 0,
+    matches: [],
+    history: [],
+    onboarded: false,
+    hasSeenLanding: false,
+  }
 }
 
 function loadSession(): SavedSession {
@@ -26,11 +44,12 @@ function loadSession(): SavedSession {
 
     const parsed = JSON.parse(raw) as Partial<SavedSession>
     return {
-      profile: { ...defaultProfile, ...parsed.profile },
+      profile: mergeProfile(parsed.profile),
       currentIndex: Number.isFinite(parsed.currentIndex) ? Number(parsed.currentIndex) : 0,
       matches: Array.isArray(parsed.matches) ? parsed.matches : [],
       history: Array.isArray(parsed.history) ? parsed.history : [],
       onboarded: Boolean(parsed.onboarded),
+      hasSeenLanding: Boolean(parsed.hasSeenLanding),
     }
   } catch {
     return createInitialSession()
@@ -56,6 +75,19 @@ function App() {
   }
 
   const startApp = () => setSession(prev => ({ ...prev, onboarded: true }))
+
+  const handleCreateProfile = () => {
+    setSession(prev => ({ ...prev, hasSeenLanding: true }))
+  }
+
+  const handleDemoPet = () => {
+    // Pre-fill the wizard with demoProfile so the user can see and edit before swiping
+    setSession(prev => ({
+      ...prev,
+      hasSeenLanding: true,
+      profile: { ...demoProfile },
+    }))
+  }
 
   const handleSwipe = useCallback((dir: 'left' | 'right') => {
     if (!currentPet) return
@@ -91,12 +123,18 @@ function App() {
     setActiveView('swipe')
   }
 
+  // 1) Landing
+  if (!session.hasSeenLanding) {
+    return <LandingPage onCreateProfile={handleCreateProfile} onDemoPet={handleDemoPet} />
+  }
+
+  // 2) Onboarding (still the basic 3-field form for now; expanded in next commit)
   if (!session.onboarded) {
     return (
       <div className="app onboarding-app">
         <section className="onboarding-card">
-          <div className="eyebrow">PetFilth Lite</div>
-          <h1>Find a compatible playmate for your pet.</h1>
+          <div className="eyebrow">PetFilth · Profile</div>
+          <h1>Set up your pet.</h1>
           <p className="intro">A tiny swipe app with personality-led matching. No account, no backend, just a lightweight staged prototype.</p>
           <label>
             Pet name
@@ -104,7 +142,13 @@ function App() {
           </label>
           <label>
             Looking for
-            <select value={session.profile.species} onChange={e => setProfile({ ...session.profile, species: e.target.value as PetProfile['species'] })}>
+            <select
+              value={session.profile.species}
+              onChange={e => {
+                const species = e.target.value as PetProfile['species']
+                setProfile({ ...session.profile, species, speciesVoice: defaultVoiceForSpecies(species) })
+              }}
+            >
               <option value="Any">Any</option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
@@ -120,6 +164,7 @@ function App() {
     )
   }
 
+  // 3) Main app: swipe + matches
   return (
     <div className="app">
       <header className="app-header">
