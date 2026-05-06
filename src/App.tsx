@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import LandingPage from './components/LandingPage'
-import { demoProfile, mergeProfile, PetProfile } from './appState'
+import { defaultProfile, demoProfile, mergeProfile, PetProfile } from './appState'
 import './App.css'
 
 const STORAGE_KEY = 'petfilth-lite-session'
@@ -17,7 +17,7 @@ type SavedSession = {
 
 function createInitialSession(): SavedSession {
   return {
-    profile: mergeProfile(),
+    profile: mergeProfile(defaultProfile),
     hasSeenLanding: false,
     onboarded: false,
   }
@@ -31,7 +31,7 @@ function loadSession(): SavedSession {
     const parsed = JSON.parse(raw) as Partial<SavedSession>
 
     return {
-      profile: mergeProfile(parsed.profile),
+      profile: mergeProfile(parsed.profile ?? defaultProfile),
       hasSeenLanding: Boolean(parsed.hasSeenLanding),
       onboarded: Boolean(parsed.onboarded),
       auth: parsed.auth,
