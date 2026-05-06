@@ -5,11 +5,39 @@
 .stamp { position: absolute; top: 20px; padding: 8px 20px; border: 4px solid; border-radius: 8px; font-size: 2rem; font-weight: 800; transform: rotate(-15deg); opacity: 0; transition: opacity 0.1s; }
 .stamp.like { right: 20px; color: #4ecb71; border-color: #4ecb71; transform: rotate(15deg); }
 .stamp.nope { left: 20px; color: #ff6b6b; border-color: #ff6b6b; }
+
+.score-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  border-radius: 14px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.score-badge strong {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.score-badge span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
 .card-content { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; overflow: hidden; }
 .card-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
 .card-header h2 { font-size: 1.5rem; font-weight: 700; color: #333; }
 .age { color: #666; font-size: 1.1rem; }
-.breed { color: #888; font-size: 0.95rem; margin-bottom: 10px; }
+.breed { color: #888; font-size: 0.95rem; margin-bottom: 6px; }
+.score-copy { color: #aaa; font-size: 0.7rem; margin-bottom: 6px; }
 .bio { color: #555; font-size: 0.9rem; line-height: 1.4; flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .traits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .trait { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }

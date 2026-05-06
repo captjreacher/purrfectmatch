@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Pet } from '../data/pets'
+import { getCompatibilityLabel } from '../appState'
 import './SwipeCard.css'
 
 interface SwipeCardProps {
@@ -32,6 +33,9 @@ export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground, 
   const likeOpacity = dragState.x > 0 ? Math.min(Math.abs(dragState.x) / 100, 1) : 0
   const nopeOpacity = dragState.x < 0 ? Math.min(Math.abs(dragState.x) / 100, 1) : 0
 
+  const showScore = typeof matchScore === 'number' && !isBackground
+  const compatibilityLabel = showScore ? getCompatibilityLabel(matchScore as number) : null
+
   return (
     <div ref={cardRef} className={`swipe-card ${isBackground ? 'background' : ''} ${dragState.isDragging ? 'dragging' : ''}`}
       style={{ transform: isBackground ? 'scale(0.95)' : `translateX(${dragState.x}px) translateY(${dragState.y}px) rotate(${rotation}deg)` }}
@@ -42,8 +46,11 @@ export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground, 
       onMouseMove={e => handleMove(e.clientX, e.clientY)}
       onMouseUp={handleEnd} onMouseLeave={handleEnd}>
       <div className="card-image" style={{ backgroundImage: `url(${pet.image})` }}>
-        {typeof matchScore === 'number' && !isBackground && (
-          <div className="score-badge"><strong>{matchScore}%</strong><span>fit</span></div>
+        {showScore && (
+          <div className="score-badge">
+            <strong>{matchScore}%</strong>
+            <span>{compatibilityLabel}</span>
+          </div>
         )}
         <div className="stamp like" style={{ opacity: likeOpacity }}>LIKE</div>
         <div className="stamp nope" style={{ opacity: nopeOpacity }}>NOPE</div>
@@ -51,7 +58,7 @@ export default function SwipeCard({ pet, onSwipe, swipeDirection, isBackground, 
       <div className="card-content">
         <div className="card-header"><h2>{pet.name}</h2><span className="age">{pet.age}</span></div>
         <p className="breed">{pet.breed}</p>
-        {typeof matchScore === 'number' && !isBackground && <p className="score-copy">Compatibility score based on profile vibe and traits.</p>}
+        {showScore && <p className="score-copy">Compatibility based on profile vibe and pet quirks.</p>}
         <p className="bio">{pet.bio}</p>
         <div className="traits">{pet.traits.map((trait, i) => <span key={i} className="trait">{trait}</span>)}</div>
       </div>
