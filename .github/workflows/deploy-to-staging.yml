@@ -51,7 +51,6 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
 
@@ -61,4 +60,6 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Print temporary staging URL
-        run: echo "${{ steps.deployment.outputs.page_url }}"
+        run: echo "$PAGE_URL"
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
