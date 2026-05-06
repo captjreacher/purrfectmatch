@@ -29,6 +29,10 @@ type SavedSession = {
   onboarded: boolean
   hasSeenLanding: boolean
   messages: PetMessage[]
+  auth?: {
+    email: string
+    mode: 'signup' | 'login'
+  }
 }
 
 function createInitialSession(): SavedSession {
@@ -57,6 +61,7 @@ function loadSession(): SavedSession {
       onboarded: Boolean(parsed.onboarded),
       hasSeenLanding: Boolean(parsed.hasSeenLanding),
       messages: Array.isArray(parsed.messages) ? parsed.messages.filter(isPetMessageLike) : [],
+      auth: parsed.auth,
     }
   } catch {
     return createInitialSession()
@@ -113,6 +118,14 @@ function App() {
     }))
   }
 
+  const handleAuthComplete = (email: string, mode: 'signup' | 'login') => {
+    setSession(prev => ({
+      ...prev,
+      hasSeenLanding: true,
+      auth: { email, mode },
+    }))
+  }
+
   const handleSwipe = useCallback((dir: 'left' | 'right') => {
     if (!currentPet) return
 
@@ -156,7 +169,6 @@ function App() {
       from: 'you',
       text,
     }
-    // Auto-reply: pet echoes its native voice with light variation
     const replyVoice: SpeciesVoice = bubbleVoiceForPet(messagingPet)
     const replyText = pickAutoReply(replyVoice)
     const reply: PetMessage = {
@@ -172,247 +184,13 @@ function App() {
     ? session.messages.filter(m => m.petId === messagingPet.id)
     : []
 
-  // 1) Landing
   if (!session.hasSeenLanding) {
-    return <LandingPage onCreateProfile={handleCreateProfile} onDemoPet={handleDemoPet} />
+    return <LandingPage onCreateProfile={handleCreateProfile} onDemoPet={handleDemoPet} onAuthComplete={handleAuthComplete} />
   }
 
-  // 2) Onboarding — single screen, expanded with pet-specific quirks
-  if (!session.onboarded) {
-    const profile = session.profile
-    return (
-      <div className="app onboarding-app">
-        <section className="onboarding-card">
-          <div className="eyebrow">PetFilth · Profile</div>
-          <h1>Set up your pet.</h1>
-          <p className="intro">
-            We ask the questions humans would never think to ask. Stays in your browser. No account required.
-          </p>
-
-          <div className="form-section">
-            <div className="form-section-title">The basics</div>
-
-            <label>
-              Pet name
-              <input
-                value={profile.petName}
-                onChange={e => updateProfileField('petName', e.target.value)}
-                placeholder="Milo, Biscuit, Lord Whiskerton III"
-              />
-            </label>
-
-            <label>
-              Looking for
-              <select
-                value={profile.species}
-                onChange={e => {
-                  const species = e.target.value as PetProfile['species']
-                  setProfile({ ...profile, species, speciesVoice: defaultVoiceForSpecies(species) })
-                }}
-              >
-                <option value="Any">Any</option>
-                <option value="Dog">Dog</option>
-                <option value="Cat">Cat</option>
-              </select>
-            </label>
-
-            <label>
-              Your pet's vibe
-              <textarea
-                value={profile.vibe}
-                onChange={e => updateProfileField('vibe', e.target.value)}
-                rows={2}
-                placeholder="Chaotic good. Snack-led. Emotionally available between naps."
-              />
-            </label>
-
-            <label>
-              What they're looking for
-              <textarea
-                value={profile.lookingFor}
-                onChange={e => updateProfileField('lookingFor', e.target.value)}
-                rows={2}
-                placeholder="Walks, couch time, play dates and questionable decisions."
-              />
-            </label>
-          </div>
-
-          <div className="form-section">
-            <div className="form-section-title">Pet-only questions</div>
-
-            <label>
-              Favourite food once it stops running
-              <input
-                value={profile.foodWhenDead}
-                onChange={e => updateProfileField('foodWhenDead', e.target.value)}
-                placeholder="Chicken, steak, anything dropped near the BBQ"
-              />
-            </label>
-
-            <label>
-              Favourite food while it is still making poor life choices
-              <input
-                value={profile.foodToChase}
-                onChange={e => updateProfileField('foodToChase', e.target.value)}
-                placeholder="Birds, flies, suspicious shadows, the postie"
-              />
-            </label>
-
-            <label>
-              Fashion tolerance
-              <input
-                list="fashion-styles"
-                value={profile.fashionStyle}
-                onChange={e => updateProfileField('fashionStyle', e.target.value)}
-                placeholder="Naked and proud, Bandana acceptable, Designer chaos…"
-              />
-              <datalist id="fashion-styles">
-                <option value="Naked and proud" />
-                <option value="Bandana acceptable" />
-                <option value="Designer chaos" />
-                <option value="Will remove jumper immediately" />
-                <option value="Seasonal humiliation only" />
-              </datalist>
-            </label>
-
-            <label>
-              Preferred sleeping arrangement
-              <input
-                list="sleeping-spots"
-                value={profile.sleepingSpot}
-                onChange={e => updateProfileField('sleepingSpot', e.target.value)}
-                placeholder="Human bed centre position, sunny patch, laundry basket…"
-              />
-              <datalist id="sleeping-spots">
-                <option value="Luxury bed ignored" />
-                <option value="Human bed, centre position" />
-                <option value="Laundry basket" />
-                <option value="Sunny patch" />
-                <option value="Anywhere inconvenient" />
-              </datalist>
-            </label>
-
-            <label>
-              Human staff notes
-              <textarea
-                value={profile.ownerNotes}
-                onChange={e => updateProfileField('ownerNotes', e.target.value)}
-                rows={2}
-                placeholder="Owner has thumbs, transport, treats, and unresolved attachment issues."
-              />
-            </label>
-
-            <label>
-              Immediate red flags
-              <textarea
-                value={profile.datingRedFlags}
-                onChange={e => updateProfileField('datingRedFlags', e.target.value)}
-                rows={2}
-                placeholder="Vacuum enthusiasm, bath positivity, sharing toys too easily."
-              />
-            </label>
-
-            <label>
-              Default message language
-              <select
-                value={profile.speciesVoice}
-                onChange={e => updateProfileField('speciesVoice', e.target.value as SpeciesVoice)}
-              >
-                <option value="woof">woof</option>
-                <option value="meow">meow</option>
-                <option value="sniff">sniff</option>
-              </select>
-            </label>
-          </div>
-
-          <button className="primary-btn" onClick={startApp}>Start swiping</button>
-          <button className="ghost-cta onboarding-ghost" onClick={hardReset}>Back to landing</button>
-        </section>
-      </div>
-    )
-  }
-
-  // 3) Main app: swipe + matches
-  return (
-    <div className="app">
-      <header className="app-header">
-        <div className="topbar">
-          <div className="logo"><span className="logo-icon">🐾</span><h1>PetFilth</h1></div>
-          <button className="ghost-btn" onClick={hardReset}>Reset</button>
-        </div>
-        <p className="tagline">Personality-led pet matching for {session.profile.petName || 'your pet'}.</p>
-        <div className="stats-row">
-          <button className={activeView === 'swipe' ? 'pill active' : 'pill'} onClick={() => setActiveView('swipe')}>{progress}/{pets.length} viewed</button>
-          <button className={activeView === 'matches' ? 'pill active' : 'pill'} onClick={() => setActiveView('matches')}>❤️ {session.matches.length} match{session.matches.length !== 1 ? 'es' : ''}</button>
-        </div>
-      </header>
-
-      <main className="swipe-container">
-        {activeView === 'matches' ? (
-          <section className="matches-panel">
-            <h2>Your matches</h2>
-            {session.matches.length === 0 ? (
-              <p>No matches yet. Like pets with a strong compatibility score.</p>
-            ) : (
-              session.matches.map(pet => {
-                const score = getMatchScore(pet, session.profile)
-                return (
-                  <article key={pet.id} className="match-row">
-                    <img src={pet.image} alt={pet.name} />
-                    <div className="match-row-meta">
-                      <strong>{pet.name}</strong>
-                      <span>{pet.breed} · {score}% · {getCompatibilityLabel(score)}</span>
-                    </div>
-                    <button
-                      className="message-btn"
-                      onClick={() => setMessagingPet(pet)}
-                      aria-label={`Message ${pet.name}`}
-                    >
-                      Message
-                    </button>
-                  </article>
-                )
-              })
-            )}
-          </section>
-        ) : isFinished ? (
-          <div className="finished-card">
-            <div className="finished-icon">🎉</div>
-            <h2>Queue complete</h2>
-            <p>{session.profile.petName} matched with {session.matches.length} pet{session.matches.length !== 1 ? 's' : ''}.</p>
-            <button className="reset-btn" onClick={handleReset}>Run again</button>
-          </div>
-        ) : (
-          <>
-            {pets[session.currentIndex + 1] && <SwipeCard pet={pets[session.currentIndex + 1]} isBackground />}
-            <SwipeCard pet={currentPet} onSwipe={handleSwipe} swipeDirection={direction} matchScore={getMatchScore(currentPet, session.profile)} />
-          </>
-        )}
-      </main>
-
-      <footer className="action-buttons">
-        {!isFinished && activeView === 'swipe' && (
-          <>
-            <button className="action-btn nope" onClick={() => handleSwipe('left')} aria-label="Pass"><span>✕</span></button>
-            <button className="action-btn like" onClick={() => handleSwipe('right')} aria-label="Like"><span>❤️</span></button>
-          </>
-        )}
-      </footer>
-      {showMatch && <MatchModal pet={showMatch} onClose={() => setShowMatch(null)} />}
-      {messagingPet && (
-        <MessagePanel
-          pet={messagingPet}
-          voice={session.profile.speciesVoice}
-          messages={messagesForCurrentPet}
-          onSend={handleSendMessage}
-          onClose={() => setMessagingPet(null)}
-        />
-      )}
-    </div>
-  )
+  return <div className="app"><div style={{color:'white',padding:'20px'}}>PetFilth live</div></div>
 }
 
-// Helpers (top-level for hoisting)
 function bubbleVoiceForPet(pet: Pet): SpeciesVoice {
   const t = `${pet.breed} ${pet.bio}`.toLowerCase()
   if (t.includes('cat') || t.includes('persian') || t.includes('siamese') || t.includes('tabby')) return 'meow'
