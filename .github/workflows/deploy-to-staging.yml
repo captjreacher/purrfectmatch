@@ -1,4 +1,4 @@
-name: Deploy PetFilth to central staging
+name: Deploy PetFilth to GitHub Pages
 
 on:
   push:
@@ -6,21 +6,17 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  STAGING_REPO: captjreacher/prod-staging
-  STAGING_BRANCH: main
-  STAGING_PATH: petfilth
-  BUILD_OUTPUT: dist
-
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: staging-${{ github.repository }}
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -41,32 +37,28 @@ jobs:
 
       - name: Validate build output
         run: |
-          test -d "${{ env.BUILD_OUTPUT }}"
-          test -f "${{ env.BUILD_OUTPUT }}/index.html"
+          test -d dist
+          test -f dist/index.html
 
-      - name: Checkout staging repo
-        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          repository: ${{ env.STAGING_REPO }}
-          ref: ${{ env.STAGING_BRANCH }}
-          token: ${{ secrets.STAGING_DEPLOY_TOKEN }}
-          path: staging
+          path: ./dist
 
-      - name: Copy build into staging path
-        run: |
-          rm -rf "staging/${{ env.STAGING_PATH }}"
-          mkdir -p "staging/${{ env.STAGING_PATH }}"
-          cp -R "${{ env.BUILD_OUTPUT }}/." "staging/${{ env.STAGING_PATH }}/"
-          touch staging/.nojekyll
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
 
-      - name: Commit and push staging update
-        working-directory: staging
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${{ env.STAGING_PATH }}" .nojekyll
-          git commit -m "Deploy ${{ github.repository }} to staging/${{ env.STAGING_PATH }}" || echo "No changes to deploy"
-          git push
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-      - name: Print staging URL
-        run: echo "https://staging.maximisedai.com/${{ env.STAGING_PATH }}/"
+      - name: Print temporary staging URL
+        run: echo "${{ steps.deployment.outputs.page_url }}"
