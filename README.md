@@ -1,4 +1,4 @@
-# PetFilth 
+# purrfectMatch
 
 > *"Let your pet get some"*
 
@@ -32,15 +32,15 @@ npm run build
 
 ## Deployment
 
-This app is configured for deployment to `staging.maximisedai.com/petfilth/`.
+This app is configured for deployment to `purrfectmatch.staging.maximisedai.com/purrfectmatch/`.
 
-The Vite config sets `base: '/petfilth/'` to support subpath hosting.
+The Vite config sets `base: '/purrfectmatch/'` to support subpath hosting.
 
 ### Build & Deploy
 
 ```bash
 npm run build
-# Deploy contents of dist/ to staging.maximisedai.com/petfilth/
+# Deploy contents of dist/ to purrfectmatch.staging.maximisedai.com/purrfectmatch/
 ```
 
 ### Quick Preview
