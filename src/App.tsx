@@ -107,7 +107,7 @@ export default function App() {
     <main style={styles.page}>
       <section style={styles.shell}>
         <nav style={styles.nav}>
-          <div style={styles.brand}><span>🐾</span><strong>PetFilth</strong></div>
+          <div style={styles.brand}><span>🐾</span><strong>purrfectMatch</strong></div>
           <div style={styles.row}>
             <button style={{ ...styles.btn, background: '#fff', border: '1px solid #ddd' }} onClick={() => startAuth('login')}>Login</button>
             <button style={{ ...styles.btn, background: '#111827', color: '#fff' }} onClick={() => startAuth('signup')}>Sign up</button>
@@ -145,7 +145,7 @@ export default function App() {
 
         {view === 'profile' && (
           <>
-            <div style={styles.badge}>PetFilth profile</div>
+            <div style={styles.badge}>purrfectMatch profile</div>
             <h1 style={styles.h1}>Set up your pet.</h1>
             <label style={styles.label}>Pet name<input style={styles.input} value={profile.petName} onChange={e => updateProfile('petName', e.target.value)} /></label>
             <label style={styles.label}>Looking for<select style={styles.input} value={profile.species} onChange={e => updateProfile('species', e.target.value)}><option>Any</option><option>Dog</option><option>Cat</option></select></label>

@@ -1,4 +1,4 @@
-# PetFilth 
+# purrfectMatch
 
 > *"Let your pet get some"*
 
@@ -32,15 +32,15 @@ npm run build
 
 ## Deployment
 
-This app is configured for deployment to `staging.maximisedai.com/petfilth/`.
+This app is deployed to `https://purrfectmatch.staging.maximisedai.com/` via GitHub Pages with a verified custom domain. Pages source is "GitHub Actions" so the Vite build in `.github/workflows/deploy-to-staging.yml` is what gets served.
 
-The Vite config sets `base: '/petfilth/'` to support subpath hosting.
+The Vite config uses `base: '/'` since the custom subdomain serves the site at its root.
 
 ### Build & Deploy
 
 ```bash
 npm run build
-# Deploy contents of dist/ to staging.maximisedai.com/petfilth/
+# CI deploys dist/ to https://purrfectmatch.staging.maximisedai.com/ on every push to main
 ```
 
 ### Quick Preview

@@ -26,7 +26,7 @@ function AuthPanel({ mode, onAuthComplete }: { mode: 'signup' | 'login'; onAuthC
   const [petName, setPetName] = useState('')
 
   const submit = () => {
-    const fallbackEmail = mode === 'signup' && petName ? `${petName.toLowerCase().replace(/\s+/g, '.')}@petmail.local` : 'guest@petfilth.local'
+    const fallbackEmail = mode === 'signup' && petName ? `${petName.toLowerCase().replace(/\s+/g, '.')}@petmail.local` : 'guest@purrfectmatch.local'
     onAuthComplete(email.trim() || fallbackEmail, mode)
   }
 
@@ -53,7 +53,7 @@ export default function LandingPage({ onCreateProfile, onDemoPet, onAuthComplete
     <div className="landing-app">
       <div className="landing-card marketing-card">
         <nav className="marketing-nav">
-          <div className="mini-brand"><span>🐾</span><strong>PetFilth</strong></div>
+          <div className="mini-brand"><span>🐾</span><strong>purrfectMatch</strong></div>
           <div className="nav-actions">
             <button onClick={() => setAuthMode('login')}>Login</button>
             <button className="nav-primary" onClick={() => setAuthMode('signup')}>Sign up</button>

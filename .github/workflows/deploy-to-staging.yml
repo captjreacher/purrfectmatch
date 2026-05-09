@@ -1,4 +1,4 @@
-name: Deploy PetFilth to GitHub Pages
+name: Deploy purrfectMatch to GitHub Pages
 
 on:
   push:
