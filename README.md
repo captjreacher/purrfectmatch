@@ -32,15 +32,15 @@ npm run build
 
 ## Deployment
 
-This app is configured for deployment to `purrfectmatch.staging.maximisedai.com/purrfectmatch/`.
+This app is deployed to `https://purrfectmatch.staging.maximisedai.com/` via GitHub Pages with a verified custom domain. Pages source is "GitHub Actions" so the Vite build in `.github/workflows/deploy-to-staging.yml` is what gets served.
 
-The Vite config sets `base: '/purrfectmatch/'` to support subpath hosting.
+The Vite config uses `base: '/'` since the custom subdomain serves the site at its root.
 
 ### Build & Deploy
 
 ```bash
 npm run build
-# Deploy contents of dist/ to purrfectmatch.staging.maximisedai.com/purrfectmatch/
+# CI deploys dist/ to https://purrfectmatch.staging.maximisedai.com/ on every push to main
 ```
 
 ### Quick Preview
